@@ -61,8 +61,8 @@ private:
             json << "{"
                  << "\"name\":\"" << name << "\","
                  << "\"duration\":" << duration << ","
-                 << "\"size\":" << size
-                 << "KB}";
+                 << "\"size\": \"" << size
+                 << "KB\"}";
 
             return json.str();
         };

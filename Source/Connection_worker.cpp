@@ -70,41 +70,74 @@ auto Connection_worker::process_request() -> void
 
 auto Connection_worker::split_parameters(std::string &target) -> std::vector<std::pair<std::string, std::string> >
 {
-    auto results = std::vector<std::string>{};
-    auto start = std::size_t{0};
-    auto end = target.find('?');
-
-    while (end != std::string::npos)
-    {
-        results.push_back(target.substr(start, end - start));
-        start = end + 1;
-        end = target.find('?', start);
-    }
-    // Add the remaining part of the string
-    results.push_back(target.substr(start));
-
-    // pull target out
-    target = results.front();
-    target.erase(0, 1);
-    //remove it from the rest of the params
-    results.erase(results.begin());
-
     auto out_params = std::vector<std::pair<std::string, std::string> >{};
-    // pull parameters into a list of paris
-    for (const auto &str: results)
+
+    auto query_start = target.find('?');
+    if (query_start == std::string::npos)
     {
-        const auto delimiter_pos = str.find('=');
-        auto left = str.substr(0, delimiter_pos);
-        // Extract the right half (from right after the delimiter to the end)
-        auto right = str.substr(delimiter_pos + 1);
-        out_params.emplace_back(left, right);
+        // No query parameters present; remove the leading '/' and exit
+        if (not target.empty() and target.front() == '/')
+        {
+            target.erase(0, 1);
+        }
+        return out_params;
     }
+
+    // Extract the query portion (everything after the '?')
+    auto query_string = target.substr(query_start + 1);
+
+    // Clean up the target path so it's just "list", "download",
+    target = target.substr(0, query_start);
+    if (not target.empty() and target.front() == '/')
+    {
+        target.erase(0, 1);
+    }
+
+    //  Parse the query string by splitting at each '&'
+    auto query_view = std::string_view(query_string);
+    size_t pos = 0;
+    while (pos < query_view.size())
+    {
+        // Find the end of the current key-value pair
+        const auto next_amp = query_view.find('&', pos);
+        auto pair = (next_amp == std::string_view::npos)
+                        ? query_view.substr(pos)
+                        : query_view.substr(pos, next_amp - pos);
+
+        // Find the assignment operator inside the pair
+        const auto eq_pos = pair.find('=');
+        if (eq_pos != std::string_view::npos)
+        {
+            auto key = std::string{pair.substr(0, eq_pos)};
+            auto value = std::string{pair.substr(eq_pos + 1)};
+
+            // Only keep parameters that have an actual key name
+            if (not key.empty())
+            {
+                out_params.emplace_back(std::move(key), std::move(value));
+            }
+        }
+
+        // Move past the current pair (and past the '&')
+        if (next_amp == std::string_view::npos)
+        {
+            break;
+        }
+        pos = next_amp + 1;
+    }
+
     return out_params;
 }
 
 auto Connection_worker::pull_download(const std::vector<std::pair<std::string, std::string> > &query_params) -> void
 {
     // TODO: Update to not assume only name is passed in
+    if (query_params.empty())
+    {
+        std::cerr << "No query parameters found." << std::endl;
+        response_.result(http::status::bad_request);
+        return;
+    }
     auto wav_data = data_cache_->get_wav_data(query_params[0].second);
 
     if (wav_data.empty())
@@ -129,6 +162,12 @@ auto Connection_worker::pull_download(const std::vector<std::pair<std::string, s
 auto Connection_worker::pull_info(const std::vector<std::pair<std::string, std::string> > &query_params) -> void
 {
     // TODO: Update to not assume only name is passed in
+    if (query_params.empty())
+    {
+        std::cerr << "No query parameters found." << std::endl;
+        response_.result(http::status::bad_request);
+        return;
+    }
     auto file_info = data_cache_->get_info(query_params[0].second);
     if (file_info.empty())
     {
@@ -210,7 +249,7 @@ auto Connection_worker::handle_post_request() -> void
 
     std::cout << "Received POST request to target: " << request_.target() << std::endl;
     std::cout << "Content-Type: " << content_type << std::endl;
-    std::cout << "File: "<< file_name << std::endl;
+    std::cout << "File: " << file_name << std::endl;
 
     // Create byte array
     auto byte_array = std::vector<uint8_t>(body_payload.size());

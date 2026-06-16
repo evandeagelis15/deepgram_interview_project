@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(test_get_info)
 
     // Verify info string generation
     std::string info = cache.get_info("test1.wav");
-    BOOST_TEST(info == "{\"name\":\"test1.wav\",\"duration\":1,\"size\":0KB}");
+    BOOST_TEST(info == "{\"name\":\"test1.wav\",\"duration\":1,\"size\": \"0KB\"}");
 
     // Verify missing info behavior
     std::string missing_info = cache.get_info("ghost.wav");
