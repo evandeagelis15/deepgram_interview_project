@@ -12,6 +12,7 @@ auto Data_cache::store_file(std::string name, const std::vector<uint8_t> &wav_da
     // TODO: Determine duration
     if (not lookup_table_.contains(name))
     {
+        // TODO: should make float for precision
         const auto size = static_cast<int>(wav_data.size())/1000;
         const auto new_file = Stored_file{.name = std::move(name), .raw_wav_data = wav_data, .duration = 1, .size = size};
         file_vector_.push_back(new_file);
@@ -93,7 +94,7 @@ auto Data_cache::get_list(
                 }
             }
         }
-        return true; // File passed all active filters
+        return true; // file passed all active filters
     };
 
     auto filtered_view = file_vector_
