@@ -10,10 +10,10 @@
 auto Data_cache::store_file(std::string name, const std::vector<uint8_t> &wav_data) -> void
 {
     // TODO: Determine duration
-    const auto size = static_cast<int>(wav_data.size())/1000;
-    const auto new_file = Stored_file{.name = std::move(name), .raw_wav_data = wav_data, .duration = 1, .size = size};
     if (not lookup_table_.contains(name))
     {
+        const auto size = static_cast<int>(wav_data.size())/1000;
+        const auto new_file = Stored_file{.name = std::move(name), .raw_wav_data = wav_data, .duration = 1, .size = size};
         file_vector_.push_back(new_file);
         lookup_table_[new_file.name] = file_vector_.size() - 1;
     }

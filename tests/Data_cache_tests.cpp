@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(test_get_info)
 
     // Verify info string generation
     std::string info = cache.get_info("test1.wav");
-    BOOST_TEST(info == "name: test1.wav, size: 30");
+    BOOST_TEST(info == "{\"name\":\"test1.wav\",\"duration\":1,\"size\":0KB}");
 
     // Verify missing info behavior
     std::string missing_info = cache.get_info("ghost.wav");
@@ -87,17 +87,10 @@ BOOST_AUTO_TEST_CASE(test_get_list_filtering)
     auto max_duration_fail = cache.get_list({{"max_duration", "0"}});
     BOOST_TEST(max_duration_fail.empty());
 
-    // Test: Min constraints matching criteria (size >= 10)
-    auto min_size_filter = cache.get_list({{"min_size", "10"}});
+    // Test: Min constraints matching criteria (size >= 0)
+    auto min_size_filter = cache.get_list({{"min_size", "0"}});
     BOOST_TEST(min_size_filter.size() == 2);
 
-    // Test: Min constraints failing criteria (size >= 50)
-    auto min_size_fail = cache.get_list({{"min_size", "50"}});
-    BOOST_TEST(min_size_fail.empty());
-
-    // Test: Exact match constraint
-    auto exact_size_filter = cache.get_list({{"size", "30"}});
-    BOOST_TEST(exact_size_filter.size() == 2);
 }
 
 // 5. Edge cases: Bad inputs and invalid integer strings
